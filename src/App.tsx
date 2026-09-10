@@ -1,4 +1,9 @@
-import { Bounds, OrbitControls, PerspectiveCamera, useGLTF } from '@react-three/drei';
+import {
+  Bounds,
+  OrbitControls,
+  PerspectiveCamera,
+  useGLTF,
+} from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { Leva, useControls } from 'leva';
 import React, { Suspense } from 'react';
@@ -58,13 +63,14 @@ function Model({ url }: { url: string }) {
 function Lights({
   ambientColor,
   ambientIntensity,
+  isRectEnabled,
+  isShadowEnabled,
+  isSpotEnabled,
   rectColor,
-  rectEnabled,
   rectIntensity,
   rectPosition,
   rectSize,
   shadowBias,
-  shadowEnabled,
   shadowMapSize,
   shadowNormalBias,
   shadowRadius,
@@ -72,7 +78,6 @@ function Lights({
   spotColor,
   spotDecay,
   spotDistance,
-  spotEnabled,
   spotIntensity,
   spotPenumbra,
   spotPosition,
@@ -80,13 +85,14 @@ function Lights({
 }: {
   ambientColor: string;
   ambientIntensity: number;
+  isRectEnabled: boolean;
+  isShadowEnabled: boolean;
+  isSpotEnabled: boolean;
   rectColor: string;
-  rectEnabled: boolean;
   rectIntensity: number;
   rectPosition: [number, number, number];
   rectSize: [number, number];
   shadowBias: number;
-  shadowEnabled: boolean;
   shadowMapSize: number;
   shadowNormalBias: number;
   shadowRadius: number;
@@ -94,7 +100,6 @@ function Lights({
   spotColor: string;
   spotDecay: number;
   spotDistance: number;
-  spotEnabled: boolean;
   spotIntensity: number;
   spotPenumbra: number;
   spotPosition: [number, number, number];
@@ -106,7 +111,7 @@ function Lights({
     <>
       <ambientLight color={ambientColor} intensity={ambientIntensity} />
 
-      {rectEnabled && (
+      {isRectEnabled && (
         <rectAreaLight
           color={rectColor}
           intensity={rectIntensity}
@@ -117,13 +122,13 @@ function Lights({
         />
       )}
 
-      {spotEnabled && (
+      {isSpotEnabled && (
         <>
           <object3D position={spotTarget} ref={targetRef} />
           {targetRef.current && (
             <spotLight
               angle={spotAngle}
-              castShadow={shadowEnabled}
+              castShadow={isShadowEnabled}
               color={spotColor}
               decay={spotDecay}
               distance={spotDistance}
@@ -144,15 +149,17 @@ function Lights({
 }
 
 export function App() {
-  const {
-    antialias,
-    exposure,
-    toneMapping,
-  } = useControls('Renderer (Canvas3D.tsx parity)', {
-    antialias: true,
-    exposure: { max: 3, min: 0, step: 0.05, value: 0.9 },
-    toneMapping: { options: Object.keys(TONE_MAPPING_OPTIONS), value: 'Linear' },
-  });
+  const { antialias, exposure, toneMapping } = useControls(
+    'Renderer (Canvas3D.tsx parity)',
+    {
+      antialias: true,
+      exposure: { max: 3, min: 0, step: 0.05, value: 0.9 },
+      toneMapping: {
+        options: Object.keys(TONE_MAPPING_OPTIONS),
+        value: 'Linear',
+      },
+    },
+  );
 
   const { fov } = useControls('Camera', {
     fov: { max: 90, min: 5, step: 1, value: DEFAULT_FOV },
@@ -199,7 +206,10 @@ export function App() {
         dpr={[1, MAX_DPR]}
         gl={{
           antialias,
-          toneMapping: TONE_MAPPING_OPTIONS[toneMapping as keyof typeof TONE_MAPPING_OPTIONS],
+          toneMapping:
+            TONE_MAPPING_OPTIONS[
+              toneMapping as keyof typeof TONE_MAPPING_OPTIONS
+            ],
           toneMappingExposure: exposure,
         }}
         shadows={shadow.shadowEnabled ? { type: THREE.PCFShadowMap } : false}
@@ -210,13 +220,14 @@ export function App() {
         <Lights
           ambientColor={ambient.ambientColor}
           ambientIntensity={ambient.ambientIntensity}
+          isRectEnabled={rect.rectEnabled}
+          isShadowEnabled={shadow.shadowEnabled}
+          isSpotEnabled={spot.spotEnabled}
           rectColor={rect.rectColor}
-          rectEnabled={rect.rectEnabled}
           rectIntensity={rect.rectIntensity}
-          rectPosition={rect.rectPosition as [number, number, number]}
-          rectSize={rect.rectSize as [number, number]}
+          rectPosition={rect.rectPosition}
+          rectSize={rect.rectSize}
           shadowBias={shadow.shadowBias}
-          shadowEnabled={shadow.shadowEnabled}
           shadowMapSize={shadow.shadowMapSize}
           shadowNormalBias={shadow.shadowNormalBias}
           shadowRadius={shadow.shadowRadius}
@@ -224,11 +235,10 @@ export function App() {
           spotColor={spot.spotColor}
           spotDecay={spot.spotDecay}
           spotDistance={spot.spotDistance}
-          spotEnabled={spot.spotEnabled}
           spotIntensity={spot.spotIntensity}
           spotPenumbra={spot.spotPenumbra}
-          spotPosition={spot.spotPosition as [number, number, number]}
-          spotTarget={spot.spotTarget as [number, number, number]}
+          spotPosition={spot.spotPosition}
+          spotTarget={spot.spotTarget}
         />
 
         <Suspense fallback={null}>

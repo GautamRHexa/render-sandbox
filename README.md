@@ -6,6 +6,7 @@ defaults, with live `leva` controls to tune tone mapping, exposure, and lighting
 before porting the winning values back.
 
 Mirrors, from `mc-studio-frontend`:
+
 - `src/components/Viewer3D/Canvas3D/Canvas3D.tsx` — `gl` props (antialias, tone
   mapping, exposure), shadow map type, dpr clamp
 - `src/components/Viewer3D/Camera/Camera..tsx` + `src/common/constant.ts` —

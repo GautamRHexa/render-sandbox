@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare": "husky",
+    "lint": "eslint .",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@react-three/drei": "^9.114.0",
@@ -17,11 +20,35 @@
     "three": "^0.169.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/three": "^0.169.0",
     "@vitejs/plugin-react": "^4.3.3",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-sort-keys-fix": "^1.1.2",
+    "globals": "^17.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
     "typescript": "^5.6.3",
+    "typescript-eslint": "^8.22.0",
     "vite": "^5.4.10"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix --cache",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
   }
 }

@@ -1,5 +1,6 @@
 import {
   Bounds,
+  Environment,
   OrbitControls,
   PerspectiveCamera,
   useGLTF,
@@ -17,6 +18,20 @@ const MAX_DPR = 2;
 
 // Mirrors mc-studio-frontend/src/common/constant.ts -> cameraConfig.threeDFov
 const DEFAULT_FOV = 20;
+
+// Mirrors mc-studio-frontend/src/components/Viewer3D/ViewerGroup.tsx scene.background
+const BACKGROUND_COLORS = {
+  Capture: '#ffffff',
+  Edit: '#f5f5f5',
+} as const;
+
+// Mirrors mc-studio-frontend/src/state/Design3D/MaterialManager.ts _loadChromeEnv()
+// (same CDN the deployed app already fetches from, so no local asset needed)
+const HDR_ENV_URL =
+  'https://drlniib7ad5li.cloudfront.net/hdr/empty_warehouse_01_1k.hdr';
+
+// Mirrors mc-studio-frontend/src/components/Viewer3D/Env/Env.tsx (3D-mode value)
+const DEFAULT_ENV_INTENSITY = 0.2;
 
 const TONE_MAPPING_OPTIONS = {
   ACESFilmic: THREE.ACESFilmicToneMapping,
@@ -198,6 +213,15 @@ export function App() {
     shadowRadius: { max: 5, min: 0, step: 0.1, value: 1.4 },
   });
 
+  const background = useControls('Background (ViewerGroup.tsx parity)', {
+    mode: { options: Object.keys(BACKGROUND_COLORS), value: 'Edit' },
+  });
+
+  const env = useControls('Environment (Env.tsx / MaterialManager.ts parity)', {
+    envIntensity: { max: 3, min: 0, step: 0.05, value: DEFAULT_ENV_INTENSITY },
+    isEnvBackgroundVisible: false,
+  });
+
   return (
     <>
       <Leva collapsed={false} />
@@ -216,6 +240,20 @@ export function App() {
         style={{ background: '#1a1a1a', height: '100vh', width: '100vw' }}>
         <PerspectiveCamera makeDefault fov={fov} position={[300, 250, 300]} />
         <OrbitControls makeDefault />
+
+        <color
+          args={[
+            BACKGROUND_COLORS[
+              background.mode as keyof typeof BACKGROUND_COLORS
+            ],
+          ]}
+          attach="background"
+        />
+        <Environment
+          background={env.isEnvBackgroundVisible}
+          environmentIntensity={env.envIntensity}
+          files={HDR_ENV_URL}
+        />
 
         <Lights
           ambientColor={ambient.ambientColor}

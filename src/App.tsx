@@ -40,6 +40,13 @@ const TONE_MAPPING_OPTIONS = {
   Reinhard: THREE.ReinhardToneMapping,
 } as const;
 
+// GLB files dropped in public/assets/
+const MODEL_OPTIONS = {
+  greyCloset: '/assets/greyCloset.glb',
+  oakCloset: '/assets/oakCloset.glb',
+  whiteCloset: '/assets/whiteCloset.glb',
+} as const;
+
 function ErrorFallback() {
   return (
     <group>
@@ -60,7 +67,7 @@ class ModelErrorBoundary extends React.Component<
     return { errored: true };
   }
   componentDidCatch(error: unknown) {
-    console.error('[render-sandbox] Failed to load /model.glb', error);
+    console.error('[render-sandbox] Failed to load model', error);
   }
   render() {
     if (this.state.errored) {
@@ -164,6 +171,10 @@ function Lights({
 }
 
 export function App() {
+  const { model } = useControls('Model', {
+    model: { options: Object.keys(MODEL_OPTIONS), value: 'greyCloset' },
+  });
+
   const { antialias, exposure, toneMapping } = useControls(
     'Renderer (Canvas3D.tsx parity)',
     {
@@ -280,9 +291,9 @@ export function App() {
         />
 
         <Suspense fallback={null}>
-          <ModelErrorBoundary>
+          <ModelErrorBoundary key={model}>
             <Bounds fit clip observe margin={1.2}>
-              <Model url="/model.glb" />
+              <Model url={MODEL_OPTIONS[model as keyof typeof MODEL_OPTIONS]} />
             </Bounds>
           </ModelErrorBoundary>
         </Suspense>

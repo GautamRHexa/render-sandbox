@@ -18,6 +18,7 @@ import React, {
   useState,
 } from 'react';
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RectAreaLightHelper } from 'three/examples/jsm/helpers/RectAreaLightHelper.js';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
@@ -59,8 +60,11 @@ const TONE_MAPPING_OPTIONS = {
   Reinhard: THREE.ReinhardToneMapping,
 } as const;
 
+import { CabinetPartsDemo } from './CabinetPartsDemo';
+
 // GLB files dropped in public/assets/
 const MODEL_OPTIONS = {
+  cabinetPartsDemo: 'cabinetPartsDemo',
   greyCloset: '/assets/greyCloset.glb',
   greyCloset2: '/assets/greyCloset2.glb',
   whiteCloset: '/assets/whiteCloset.glb',
@@ -1092,6 +1096,52 @@ function HdrSourcePanel({
   );
 }
 
+function useRoomEnvironmentTexture() {
+  const { gl } = useThree();
+  return useMemo(() => {
+    const pmremGenerator = new THREE.PMREMGenerator(gl);
+    pmremGenerator.compileEquirectangularShader();
+    const roomEnv = new RoomEnvironment();
+    const renderTarget = pmremGenerator.fromScene(roomEnv);
+    const texture = renderTarget.texture;
+    roomEnv.dispose();
+    pmremGenerator.dispose();
+    return texture;
+  }, [gl]);
+}
+
+function AppEnvironment({
+  hdrUrl,
+  intensity,
+  isBackgroundVisible,
+  source,
+}: {
+  hdrUrl: string;
+  intensity: number;
+  isBackgroundVisible: boolean;
+  source: 'RoomEnvironment' | 'Custom HDR';
+}) {
+  const roomTexture = useRoomEnvironmentTexture();
+
+  if (source === 'RoomEnvironment') {
+    return (
+      <Environment
+        background={isBackgroundVisible}
+        environmentIntensity={intensity}
+        map={roomTexture}
+      />
+    );
+  }
+
+  return (
+    <Environment
+      background={isBackgroundVisible}
+      environmentIntensity={intensity}
+      files={hdrUrl}
+    />
+  );
+}
+
 export function App() {
   const [hdrUrl, setHdrUrl] = useState(HDR_ENV_URL);
 
@@ -1118,6 +1168,10 @@ export function App() {
   const env = useControls('Environment (Env.tsx / MaterialManager.ts parity)', {
     envIntensity: { max: 3, min: 0, step: 0.05, value: DEFAULT_ENV_INTENSITY },
     isEnvBackgroundVisible: false,
+    source: {
+      options: ['RoomEnvironment', 'Custom HDR'],
+      value: 'RoomEnvironment',
+    },
   });
 
   const helpers = useControls('Light Helpers', {
@@ -1151,21 +1205,26 @@ export function App() {
           ]}
           attach="background"
         />
-        <Environment
-          background={env.isEnvBackgroundVisible}
-          environmentIntensity={env.envIntensity}
-          files={hdrUrl}
+        <AppEnvironment
+          hdrUrl={hdrUrl}
+          intensity={env.envIntensity}
+          isBackgroundVisible={env.isEnvBackgroundVisible}
+          source={env.source as 'RoomEnvironment' | 'Custom HDR'}
         />
 
         <Suspense fallback={null}>
           <ModelErrorBoundary key={model}>
-            <Bounds fit clip observe margin={1.2}>
-              <Model
-                hdrUrl={hdrUrl}
-                url={MODEL_OPTIONS[model as keyof typeof MODEL_OPTIONS]}
-                showLightHelpers={helpers.showLightHelpers}
-              />
-            </Bounds>
+            {model === 'cabinetPartsDemo' ? (
+              <CabinetPartsDemo />
+            ) : (
+              <Bounds fit clip observe margin={1.2}>
+                <Model
+                  hdrUrl={hdrUrl}
+                  url={MODEL_OPTIONS[model as keyof typeof MODEL_OPTIONS]}
+                  showLightHelpers={helpers.showLightHelpers}
+                />
+              </Bounds>
+            )}
           </ModelErrorBoundary>
         </Suspense>
       </Canvas>

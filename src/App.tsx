@@ -112,6 +112,8 @@ type TunableMaterial = THREE.Material & {
   envMapIntensity?: number;
   envMapRotation?: THREE.Euler;
   metalness?: number;
+  normalMap?: THREE.Texture | null;
+  normalScale?: THREE.Vector2;
   roughness?: number;
   wireframe?: boolean;
 };
@@ -253,6 +255,22 @@ function buildMaterialSchema(descriptors: MaterialDescriptor[]) {
         value: mat.metalness,
       };
     }
+    if (mat.normalMap && mat.normalScale) {
+      controls[`${index}_normalScaleX`] = {
+        label: 'normalScale X',
+        max: 10,
+        min: -10,
+        step: 0.01,
+        value: mat.normalScale.x,
+      };
+      controls[`${index}_normalScaleY`] = {
+        label: 'normalScale Y',
+        max: 10,
+        min: -10,
+        step: 0.01,
+        value: mat.normalScale.y,
+      };
+    }
     if (typeof mat.envMapIntensity === 'number') {
       controls[`${index}_envMapIntensity`] = {
         label: 'envMapIntensity',
@@ -315,6 +333,14 @@ function applyMaterialValues(
 
     const metalness = values[`${index}_metalness`];
     if (typeof metalness === 'number') mat.metalness = metalness;
+
+    if (mat.normalMap && mat.normalScale) {
+      const normalScaleX = values[`${index}_normalScaleX`];
+      if (typeof normalScaleX === 'number') mat.normalScale.x = normalScaleX;
+
+      const normalScaleY = values[`${index}_normalScaleY`];
+      if (typeof normalScaleY === 'number') mat.normalScale.y = normalScaleY;
+    }
 
     const envMapIntensity = values[`${index}_envMapIntensity`];
     if (typeof envMapIntensity === 'number')

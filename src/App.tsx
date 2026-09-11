@@ -8,7 +8,15 @@ import {
 } from '@react-three/drei';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { folder, Leva, useControls } from 'leva';
-import React, { Suspense, useEffect, useMemo } from 'react';
+import React, {
+  ChangeEvent,
+  FormEvent,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import * as THREE from 'three';
 import { RectAreaLightHelper } from 'three/examples/jsm/helpers/RectAreaLightHelper.js';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
@@ -833,9 +841,11 @@ function applyLightValues(
 }
 
 function Model({
+  hdrUrl,
   showLightHelpers,
   url,
 }: {
+  hdrUrl: string;
   showLightHelpers: boolean;
   url: string;
 }) {
@@ -859,7 +869,7 @@ function Model({
 
   // Raw (non-PMREM) equirect texture, loaded the same way MaterialManager's
   // _loadChromeEnv() does, so hardware reflections match production exactly.
-  const hardwareEnv = useLoader(RGBELoader, HDR_ENV_URL);
+  const hardwareEnv = useLoader(RGBELoader, hdrUrl);
   hardwareEnv.mapping = THREE.EquirectangularReflectionMapping;
 
   useEffect(() => {
@@ -957,7 +967,108 @@ function SceneExporter() {
   return null;
 }
 
+function HdrSourcePanel({
+  hdrUrl,
+  onHdrChange,
+}: {
+  hdrUrl: string;
+  onHdrChange: (source: string) => void;
+}) {
+  const [link, setLink] = useState(HDR_ENV_URL);
+  const [fileName, setFileName] = useState('Default environment');
+  const objectUrlRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    };
+  }, []);
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    const objectUrl = URL.createObjectURL(file);
+    objectUrlRef.current = objectUrl;
+    setFileName(file.name);
+    onHdrChange(objectUrl);
+  };
+
+  const handleLinkSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextLink = link.trim();
+    if (!nextLink) return;
+
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = undefined;
+    }
+    setFileName('Remote environment');
+    onHdrChange(nextLink);
+  };
+
+  return (
+    <section
+      style={{
+        background: 'rgba(20, 20, 20, 0.92)',
+        border: '1px solid rgba(255, 255, 255, 0.16)',
+        borderRadius: 8,
+        color: '#fff',
+        display: 'grid',
+        gap: 10,
+        left: 16,
+        maxWidth: 360,
+        padding: 14,
+        position: 'fixed',
+        top: 16,
+        width: 'calc(100vw - 32px)',
+        zIndex: 10,
+      }}>
+      <strong style={{ fontSize: 14 }}>HDR environment</strong>
+      <label style={{ display: 'grid', fontSize: 12, gap: 6 }}>
+        Upload HDR
+        <input
+          accept=".hdr,image/vnd.radiance"
+          onChange={handleFileChange}
+          type="file"
+        />
+      </label>
+      <form onSubmit={handleLinkSubmit} style={{ display: 'grid', gap: 6 }}>
+        <label style={{ fontSize: 12 }} htmlFor="hdr-link">
+          Upload link
+        </label>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input
+            id="hdr-link"
+            onChange={(event) => setLink(event.target.value)}
+            placeholder="https://example.com/scene.hdr"
+            style={{
+              background: '#2b2b2b',
+              border: '1px solid #555',
+              borderRadius: 4,
+              color: '#fff',
+              minWidth: 0,
+              padding: '7px 8px',
+              width: '100%',
+            }}
+            type="url"
+            value={link}
+          />
+          <button type="submit">Load</button>
+        </div>
+      </form>
+      <small style={{ color: '#bdbdbd', overflowWrap: 'anywhere' }}>
+        Active: {fileName}
+        {hdrUrl.startsWith('blob:') ? ' (local file)' : ''}
+      </small>
+    </section>
+  );
+}
+
 export function App() {
+  const [hdrUrl, setHdrUrl] = useState(HDR_ENV_URL);
+
   const { model } = useControls('Model', {
     model: { options: Object.keys(MODEL_OPTIONS), value: 'greyCloset2' },
   });
@@ -988,11 +1099,12 @@ export function App() {
   });
 
   const helpers = useControls('Light Helpers', {
-    showLightHelpers: true,
+    showLightHelpers: false,
   });
 
   return (
     <>
+      <HdrSourcePanel hdrUrl={hdrUrl} onHdrChange={setHdrUrl} />
       <Leva collapsed={false} />
       <Canvas
         camera={{ fov }}
@@ -1022,13 +1134,14 @@ export function App() {
         <Environment
           background={env.isEnvBackgroundVisible}
           environmentIntensity={env.envIntensity}
-          files={HDR_ENV_URL}
+          files={hdrUrl}
         />
 
         <Suspense fallback={null}>
           <ModelErrorBoundary key={model}>
             <Bounds fit clip observe margin={1.2}>
               <Model
+                hdrUrl={hdrUrl}
                 url={MODEL_OPTIONS[model as keyof typeof MODEL_OPTIONS]}
                 showLightHelpers={helpers.showLightHelpers}
               />

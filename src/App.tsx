@@ -1073,15 +1073,11 @@ export function App() {
     model: { options: Object.keys(MODEL_OPTIONS), value: 'greyCloset2' },
   });
 
-  const { antialias, exposure, toneMapping } = useControls(
+  const { antialias, exposure } = useControls(
     'Renderer (Canvas3D.tsx parity)',
     {
       antialias: true,
       exposure: { max: 3, min: 0, step: 0.05, value: 0.9 },
-      toneMapping: {
-        options: Object.keys(TONE_MAPPING_OPTIONS),
-        value: 'Linear',
-      },
     },
   );
 
@@ -1111,10 +1107,8 @@ export function App() {
         dpr={[1, MAX_DPR]}
         gl={{
           antialias,
-          toneMapping:
-            TONE_MAPPING_OPTIONS[
-              toneMapping as keyof typeof TONE_MAPPING_OPTIONS
-            ],
+          outputColorSpace: THREE.SRGBColorSpace,
+          toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: exposure,
         }}
         shadows={{ type: THREE.PCFShadowMap }}
